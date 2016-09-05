@@ -6,26 +6,49 @@ import (
 	"os/exec"
 )
 
+type el int
+
+const (
+	NONE el = iota
+	SNAKE
+	APPLE
+	WALL
+)
+
 type board struct {
-	h, w int
+	w io.Writer
+	b [][]el
 }
 
-func newBoard(height, width int) *board {
+func newBoard(w io.Writer, height, width int) *board {
+	b := make([][]el, height)
+	for i := range b {
+		b[i] = make([]el, width)
+	}
+	b[1][1] = SNAKE
+	b[2][2] = APPLE
 	return &board{
-		h: height,
-		w: width,
+		w: w,
+		b: b,
 	}
 }
 
-func (b *board) draw(w io.Writer) {
-	clear(w)
-	for i := 0; i < b.h; i++ {
+func (b *board) draw() {
+	clear(b.w)
+	for i := range b.b {
 		s := ""
-		for j := 0; j < b.w; j++ {
-			s += "."
+		for j := range b.b[i] {
+			switch b.b[i][j] {
+			case SNAKE:
+				s += "S"
+			case APPLE:
+				s += "A"
+			default:
+				s += "."
+			}
 		}
-		fmt.Fprintf(w, s)
-		fmt.Fprintf(w, "\n")
+		fmt.Fprintf(b.w, s)
+		fmt.Fprintf(b.w, "\n")
 	}
 }
 
