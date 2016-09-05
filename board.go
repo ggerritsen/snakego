@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"os/exec"
+	"time"
 )
 
 type el int
@@ -16,8 +18,10 @@ const (
 )
 
 type board struct {
-	w io.Writer
-	b [][]el
+	w             io.Writer
+	b             [][]el
+	height, width int
+	r             *rand.Rand
 }
 
 func newBoard(w io.Writer, height, width int) *board {
@@ -25,11 +29,38 @@ func newBoard(w io.Writer, height, width int) *board {
 	for i := range b {
 		b[i] = make([]el, width)
 	}
-	b[1][1] = SNAKE
-	b[2][2] = APPLE
-	return &board{
-		w: w,
-		b: b,
+	board := &board{
+		w:      w,
+		b:      b,
+		height: height,
+		width:  width,
+		r:      rand.New(rand.NewSource(time.Now().UnixNano())),
+	}
+
+	board.b[1][1] = SNAKE
+	board.addApple()
+
+	return board
+}
+
+func (b *board) addApple() {
+	// try random first
+	for i := 0; i < 10; i++ {
+		x, y := b.r.Intn(b.height), b.r.Intn(b.width)
+		if b.b[x][y] == NONE {
+			b.b[x][y] = APPLE
+			return
+		}
+	}
+
+	// default, non-random
+	for i := 0; i < b.height; i++ {
+		for j := 0; j < b.width; j++ {
+			if b.b[i][j] == NONE {
+				b.b[i][j] = APPLE
+				return
+			}
+		}
 	}
 }
 
