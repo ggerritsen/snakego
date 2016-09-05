@@ -3,26 +3,17 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"time"
 )
 
 const framerate = 1 * time.Second
+const height, width = 3, 3
 
 func main() {
-	println("...")
-	println("...")
-	println("...")
+	b := newBoard(height, width)
+	b.draw(os.Stdout)
 
 	time.Sleep(framerate)
 
-	clear()
-
 	fmt.Fprintf(os.Stdout, "stop")
-}
-
-func clear() {
-	cmd := exec.Command("clear")
-	cmd.Stdout = os.Stdout
-	cmd.Run()
 }
