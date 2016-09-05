@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"os/exec"
 	"time"
@@ -44,7 +45,7 @@ func newBoard(w io.Writer, height, width int) *board {
 }
 
 func (b *board) addApple() {
-	// try random first
+	// random
 	for i := 0; i < 10; i++ {
 		x, y := b.r.Intn(b.height), b.r.Intn(b.width)
 		if b.b[x][y] == NONE {
@@ -53,7 +54,7 @@ func (b *board) addApple() {
 		}
 	}
 
-	// default, non-random
+	// non-random
 	for i := 0; i < b.height; i++ {
 		for j := 0; j < b.width; j++ {
 			if b.b[i][j] == NONE {
@@ -86,5 +87,7 @@ func (b *board) draw() {
 func clear(w io.Writer) {
 	cmd := exec.Command("clear")
 	cmd.Stdout = w
-	cmd.Run()
+	if err := cmd.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
