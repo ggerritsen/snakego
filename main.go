@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -20,14 +22,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not backup terminal settings: %s", err)
 	}
-	restoreStty := exec.Command("/bin/stty", "-g", string(b))
-	restoreStty.Stdin = os.Stdin
-	defer func() {
-		if err := restoreStty.Run(); err != nil {
+
+	restoreStty := func() {
+		log.Printf("Restoring stty to %q", string(b))
+		cmd := exec.Command("/bin/stty", "-g", string(b))
+		cmd.Stdin = os.Stdin
+		if err := cmd.Run(); err != nil {
 			log.Printf("Could not reset stty. Try it manually with '/bin/stty -g %s'", string(b))
 			log.Fatal(err)
 		}
-	}()
+	}
 
 	cmd = exec.Command("/bin/stty", "cbreak", "-echo")
 	cmd.Stdin = os.Stdin
@@ -38,14 +42,28 @@ func main() {
 	board := newBoard(os.Stdout, height, width)
 	board.draw()
 
-	println("What's your move?")
+	go func() {
+		println("What's your move?")
+		sc := bufio.NewScanner(os.Stdin)
+		sc.Split(bufio.ScanBytes)
 
-	sc := bufio.NewScanner(os.Stdin)
-	sc.Split(bufio.ScanRunes)
-	if sc.Scan() {
-		input := sc.Bytes()
-		fmt.Printf("you inputted %q\n", input)
-	}
+		for {
+			// TODO: make it possible to use arrow keys
+			if sc.Scan() {
+				input := sc.Bytes()
+				fmt.Printf("you inputted %c\n", input)
+			} else {
+				fmt.Printf("error: %s", sc.Err())
+				break
+			}
+		}
+	}()
 
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, os.Kill, syscall.SIGTERM)
+
+	<-stop
+	restoreStty()
 	println("Done.")
+	os.Exit(0)
 }
