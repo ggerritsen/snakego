@@ -50,8 +50,8 @@ func main() {
 		for {
 			// TODO: make it possible to use arrow keys
 			if sc.Scan() {
-				input := sc.Bytes()
-				fmt.Printf("you inputted %c\n", input)
+				board.move(sc.Text())
+				board.draw()
 			} else {
 				fmt.Printf("error: %s", sc.Err())
 				break

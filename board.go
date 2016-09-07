@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+type move int
+
+const (
+	UP move = iota
+	DOWN
+	LEFT
+	RIGHT
+)
+
 type el int
 
 const (
@@ -22,6 +31,7 @@ type board struct {
 	w             io.Writer
 	b             [][]el
 	height, width int
+	snake         []int
 	r             *rand.Rand
 }
 
@@ -39,6 +49,7 @@ func newBoard(w io.Writer, height, width int) *board {
 	}
 
 	board.b[1][1] = SNAKE
+	board.snake = []int{1, 1}
 	board.addApple()
 
 	return board
@@ -82,6 +93,36 @@ func (b *board) draw() {
 		fmt.Fprintf(b.w, s)
 		fmt.Fprintf(b.w, "\n")
 	}
+}
+
+func (b *board) move(s string) {
+	switch s {
+	case "w":
+		b.playMove(UP)
+	case "s":
+		b.playMove(DOWN)
+	case "a":
+		b.playMove(LEFT)
+	case "d":
+		b.playMove(RIGHT)
+	default:
+	}
+}
+
+func (b *board) playMove(m move) {
+	x, y := b.snake[0], b.snake[1]
+
+	moves := map[move]func() (int, int){
+		UP:    func() (int, int) { return x - 1, y },
+		DOWN:  func() (int, int) { return x + 1, y },
+		LEFT:  func() (int, int) { return x, y - 1 },
+		RIGHT: func() (int, int) { return x, y + 1 },
+	}
+
+	c1, c2 := moves[m]()
+	b.b[c1][c2] = SNAKE
+	b.b[x][y] = NONE
+	b.snake = []int{c1, c2}
 }
 
 func clear(w io.Writer) {
