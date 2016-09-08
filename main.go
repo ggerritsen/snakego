@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const framerate = 1 * time.Second
+const frameRate = 3 * time.Second
 const height, width = 3, 3
 
 func main() {
@@ -40,24 +40,33 @@ func main() {
 	}
 
 	board := newBoard(os.Stdout, height, width)
-	board.draw()
 
+	// catch user input to change snake's direction
 	go func() {
-		println("What's your move?")
 		sc := bufio.NewScanner(os.Stdin)
 		sc.Split(bufio.ScanBytes)
 
 		for {
 			// TODO: make it possible to use arrow keys
 			if sc.Scan() {
-				board.move(sc.Text())
-				board.draw()
+				board.changeDirection(sc.Text())
 			} else {
 				fmt.Printf("error: %s", sc.Err())
 				break
 			}
 		}
 	}()
+
+	// update board every frameRate
+	go func() {
+		for {
+			board.draw()
+			time.Sleep(frameRate)
+			board.nextMove()
+		}
+	}()
+
+	// TODO: reset stty in case of panic
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, os.Kill, syscall.SIGTERM)

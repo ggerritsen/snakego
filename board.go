@@ -12,7 +12,8 @@ import (
 type move int
 
 const (
-	UP move = iota
+	NO move = iota
+	UP
 	DOWN
 	LEFT
 	RIGHT
@@ -32,6 +33,7 @@ type board struct {
 	b             [][]el
 	height, width int
 	snake         []int
+	curDirection  move
 	r             *rand.Rand
 }
 
@@ -41,11 +43,12 @@ func newBoard(w io.Writer, height, width int) *board {
 		b[i] = make([]el, width)
 	}
 	board := &board{
-		w:      w,
-		b:      b,
-		height: height,
-		width:  width,
-		r:      rand.New(rand.NewSource(time.Now().UnixNano())),
+		w:            w,
+		b:            b,
+		height:       height,
+		width:        width,
+		curDirection: NO,
+		r:            rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
 	board.b[1][1] = SNAKE
@@ -95,18 +98,25 @@ func (b *board) draw() {
 	}
 }
 
-func (b *board) move(s string) {
+func (b *board) changeDirection(s string) {
 	switch s {
 	case "w":
-		b.playMove(UP)
+		b.curDirection = UP
 	case "s":
-		b.playMove(DOWN)
+		b.curDirection = DOWN
 	case "a":
-		b.playMove(LEFT)
+		b.curDirection = LEFT
 	case "d":
-		b.playMove(RIGHT)
+		b.curDirection = RIGHT
 	default:
 	}
+}
+
+func (b *board) nextMove() {
+	if b.curDirection == NO {
+		return
+	}
+	b.playMove(b.curDirection)
 }
 
 func (b *board) playMove(m move) {
