@@ -59,14 +59,20 @@ func main() {
 
 	// update board every frameRate
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Printf("[ERROR] Got panic: %s\n", err)
+				restoreStty()
+				os.Exit(1)
+			}
+		}()
+
 		for {
 			board.draw()
 			time.Sleep(frameRate)
 			board.nextMove()
 		}
 	}()
-
-	// TODO: reset stty in case of panic
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, os.Kill, syscall.SIGTERM)
