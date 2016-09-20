@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const frameRate = 3 * time.Second
+const frameRate = 500 * time.Millisecond
 const height, width = 3, 3
 
 func main() {

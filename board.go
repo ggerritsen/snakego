@@ -98,6 +98,7 @@ func (b *board) draw() {
 	}
 }
 
+// TODO only go sideways, not the opposite direction
 func (b *board) changeDirection(s string) {
 	switch s {
 	case "w":
@@ -130,6 +131,15 @@ func (b *board) playMove(m move) {
 	}
 
 	c1, c2 := moves[m]()
+	if c1 < 0 {
+		c1 = c1 + width
+	}
+	if c2 < 0 {
+		c2 = c2 + height
+	}
+	c1 = c1 % b.width
+	c2 = c2 % b.height
+
 	b.b[c1][c2] = SNAKE
 	b.b[x][y] = NONE
 	b.snake = []int{c1, c2}
