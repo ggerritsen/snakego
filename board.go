@@ -98,17 +98,24 @@ func (b *board) draw() {
 	}
 }
 
-// TODO only go sideways, not the opposite direction
 func (b *board) changeDirection(s string) {
 	switch s {
 	case "w":
-		b.curDirection = UP
+		if b.curDirection != DOWN {
+			b.curDirection = UP
+		}
 	case "s":
-		b.curDirection = DOWN
+		if b.curDirection != UP {
+			b.curDirection = DOWN
+		}
 	case "a":
-		b.curDirection = LEFT
+		if b.curDirection != RIGHT {
+			b.curDirection = LEFT
+		}
 	case "d":
-		b.curDirection = RIGHT
+		if b.curDirection != LEFT {
+			b.curDirection = RIGHT
+		}
 	default:
 	}
 }
