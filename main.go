@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const frameRate = 500 * time.Millisecond
+const frameRate = 1000 * time.Millisecond
 const height, width = 3, 3
 
 func main() {
@@ -70,7 +70,7 @@ func main() {
 		for {
 			board.draw()
 			time.Sleep(frameRate)
-			board.nextMove()
+			board.playMove()
 		}
 	}()
 

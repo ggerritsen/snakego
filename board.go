@@ -22,17 +22,21 @@ const (
 type el int
 
 const (
-	NONE el = iota
-	SNAKE
+	NONE  el = iota
+	SNAKE    // TODO: is this necessary? Why not just draw the snake on the board using board.snake?
 	APPLE
 	WALL
 )
+
+type coord struct {
+	x, y int
+}
 
 type board struct {
 	w             io.Writer
 	b             [][]el
 	height, width int
-	snake         []int
+	snake         []coord
 	curDirection  move
 	r             *rand.Rand
 }
@@ -52,7 +56,7 @@ func newBoard(w io.Writer, height, width int) *board {
 	}
 
 	board.b[1][1] = SNAKE
-	board.snake = []int{1, 1}
+	board.snake = []coord{{1, 1}}
 	board.addApple()
 
 	return board
@@ -79,6 +83,7 @@ func (b *board) addApple() {
 	}
 }
 
+// TODO draw head differently
 func (b *board) draw() {
 	clear(b.w)
 	for i := range b.b {
@@ -98,6 +103,7 @@ func (b *board) draw() {
 	}
 }
 
+// TODO game over if snake bumps into itself
 func (b *board) changeDirection(s string) {
 	switch s {
 	case "w":
@@ -120,16 +126,12 @@ func (b *board) changeDirection(s string) {
 	}
 }
 
-func (b *board) nextMove() {
+func (b *board) playMove() {
 	if b.curDirection == NO {
 		return
 	}
-	b.playMove(b.curDirection)
-}
 
-func (b *board) playMove(m move) {
-	x, y := b.snake[0], b.snake[1]
-
+	x, y := b.snake[0].x, b.snake[0].y
 	moves := map[move]func() (int, int){
 		UP:    func() (int, int) { return x - 1, y },
 		DOWN:  func() (int, int) { return x + 1, y },
@@ -137,7 +139,7 @@ func (b *board) playMove(m move) {
 		RIGHT: func() (int, int) { return x, y + 1 },
 	}
 
-	c1, c2 := moves[m]()
+	c1, c2 := moves[b.curDirection]()
 	if c1 < 0 {
 		c1 = c1 + width
 	}
@@ -147,9 +149,33 @@ func (b *board) playMove(m move) {
 	c1 = c1 % b.width
 	c2 = c2 % b.height
 
-	b.b[c1][c2] = SNAKE
-	b.b[x][y] = NONE
-	b.snake = []int{c1, c2}
+	b.update(c1, c2)
+}
+
+func (b *board) update(x, y int) {
+	newSnake := []coord{{x, y}}
+
+	if b.b[x][y] == NONE {
+		for i := 0; i < len(b.snake)-1; i++ {
+			newSnake = append(newSnake, b.snake[i])
+		}
+	}
+
+	if b.b[x][y] == APPLE {
+		for i := 0; i < len(b.snake); i++ {
+			newSnake = append(newSnake, b.snake[i])
+		}
+		b.addApple()
+	}
+
+	for _, c := range b.snake {
+		b.b[c.x][c.y] = NONE
+	}
+
+	b.snake = newSnake
+	for _, c := range b.snake {
+		b.b[c.x][c.y] = SNAKE
+	}
 }
 
 func clear(w io.Writer) {
