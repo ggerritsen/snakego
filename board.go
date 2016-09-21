@@ -22,8 +22,8 @@ const (
 type el int
 
 const (
-	NONE  el = iota
-	SNAKE    // TODO: is this necessary? Why not just draw the snake on the board using board.snake?
+	NONE el = iota
+	SNAKE
 	APPLE
 	WALL
 )
@@ -55,7 +55,6 @@ func newBoard(w io.Writer, height, width int) *board {
 		r:            rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
-	board.b[1][1] = SNAKE
 	board.snake = []coord{{1, 1}}
 	board.addApple()
 
@@ -63,6 +62,8 @@ func newBoard(w io.Writer, height, width int) *board {
 }
 
 func (b *board) addApple() {
+	b.refresh()
+
 	// random
 	for i := 0; i < 10; i++ {
 		x, y := b.r.Intn(b.height), b.r.Intn(b.width)
@@ -83,15 +84,22 @@ func (b *board) addApple() {
 	}
 }
 
-// TODO draw head differently
 func (b *board) draw() {
-	clear(b.w)
+	b.clearScreen()
+	b.refresh()
+
+	snakeHead := b.snake[0]
+
 	for i := range b.b {
 		s := ""
 		for j := range b.b[i] {
 			switch b.b[i][j] {
 			case SNAKE:
-				s += "S"
+				if i == snakeHead.x && j == snakeHead.y {
+					s += "$"
+				} else {
+					s += "S"
+				}
 			case APPLE:
 				s += "A"
 			default:
@@ -103,7 +111,12 @@ func (b *board) draw() {
 	}
 }
 
-// TODO game over if snake bumps into itself
+func (b *board) refresh() {
+	for _, c := range b.snake {
+		b.b[c.x][c.y] = SNAKE
+	}
+}
+
 func (b *board) changeDirection(s string) {
 	switch s {
 	case "w":
@@ -126,10 +139,11 @@ func (b *board) changeDirection(s string) {
 	}
 }
 
-func (b *board) playMove() {
+func (b *board) playMove() bool {
 	if b.curDirection == NO {
-		return
+		return true
 	}
+	b.refresh()
 
 	x, y := b.snake[0].x, b.snake[0].y
 	moves := map[move]func() (int, int){
@@ -149,10 +163,16 @@ func (b *board) playMove() {
 	c1 = c1 % b.width
 	c2 = c2 % b.height
 
-	b.update(c1, c2)
+	return b.update(c1, c2)
 }
 
-func (b *board) update(x, y int) {
+func (b *board) update(x, y int) bool {
+	for _, c := range b.snake {
+		if c.x == x && c.y == y {
+			return false
+		}
+	}
+
 	newSnake := []coord{{x, y}}
 
 	if b.b[x][y] == NONE {
@@ -176,11 +196,13 @@ func (b *board) update(x, y int) {
 	for _, c := range b.snake {
 		b.b[c.x][c.y] = SNAKE
 	}
+
+	return true
 }
 
-func clear(w io.Writer) {
+func (b *board) clearScreen() {
 	cmd := exec.Command("clear")
-	cmd.Stdout = w
+	cmd.Stdout = b.w
 	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
 	}

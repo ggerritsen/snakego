@@ -24,7 +24,6 @@ func main() {
 	}
 
 	restoreStty := func() {
-		log.Printf("Restoring stty to %q", string(b))
 		cmd := exec.Command("/bin/stty", "-g", string(b))
 		cmd.Stdin = os.Stdin
 		if err := cmd.Run(); err != nil {
@@ -38,6 +37,9 @@ func main() {
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Could not setup terminal: %s", err)
 	}
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	board := newBoard(os.Stdout, height, width)
 
@@ -70,15 +72,18 @@ func main() {
 		for {
 			board.draw()
 			time.Sleep(frameRate)
-			board.playMove()
+			if ok := board.playMove(); !ok {
+				// game over
+				fmt.Printf("Game over.\n")
+				time.Sleep(frameRate)
+				stop <- os.Interrupt
+				break
+			}
 		}
 	}()
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, os.Kill, syscall.SIGTERM)
-
 	<-stop
 	restoreStty()
-	println("Done.")
+	println("The end.")
 	os.Exit(0)
 }
