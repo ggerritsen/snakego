@@ -41,7 +41,7 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, os.Kill, syscall.SIGTERM)
 
-	board := newBoard(os.Stdout, height, width)
+	board := newBoard(height, width)
 
 	// catch user input to change snake's direction
 	go func() {
@@ -70,7 +70,7 @@ func main() {
 		}()
 
 		for {
-			board.draw()
+			board.draw(os.Stdout)
 			time.Sleep(frameRate)
 			if ok := board.playMove(); !ok {
 				// game over

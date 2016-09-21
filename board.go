@@ -33,7 +33,6 @@ type coord struct {
 }
 
 type board struct {
-	w             io.Writer
 	b             [][]el
 	height, width int
 	snake         []coord
@@ -41,13 +40,12 @@ type board struct {
 	r             *rand.Rand
 }
 
-func newBoard(w io.Writer, height, width int) *board {
+func newBoard(height, width int) *board {
 	b := make([][]el, height)
 	for i := range b {
 		b[i] = make([]el, width)
 	}
 	board := &board{
-		w:            w,
 		b:            b,
 		height:       height,
 		width:        width,
@@ -84,8 +82,8 @@ func (b *board) addApple() {
 	}
 }
 
-func (b *board) draw() {
-	b.clearScreen()
+func (b *board) draw(w io.Writer) {
+	clear(w)
 	b.refresh()
 
 	snakeHead := b.snake[0]
@@ -106,8 +104,8 @@ func (b *board) draw() {
 				s += "."
 			}
 		}
-		fmt.Fprintf(b.w, s)
-		fmt.Fprintf(b.w, "\n")
+		fmt.Fprintf(w, s)
+		fmt.Fprintf(w, "\n")
 	}
 }
 
@@ -200,9 +198,9 @@ func (b *board) update(x, y int) bool {
 	return true
 }
 
-func (b *board) clearScreen() {
+func clear(w io.Writer) {
 	cmd := exec.Command("clear")
-	cmd.Stdout = b.w
+	cmd.Stdout = w
 	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
 	}
