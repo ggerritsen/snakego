@@ -133,35 +133,34 @@ func (b *board) playMove() bool {
 	}
 
 	x, y := b.snake[0].x, b.snake[0].y
-	// TODO use coord?
-	moves := map[move]func() (int, int){
-		UP:    func() (int, int) { return x - 1, y },
-		DOWN:  func() (int, int) { return x + 1, y },
-		LEFT:  func() (int, int) { return x, y - 1 },
-		RIGHT: func() (int, int) { return x, y + 1 },
+	moves := map[move]func() coord{
+		UP:    func() coord { return coord{x - 1, y} },
+		DOWN:  func() coord { return coord{x + 1, y} },
+		LEFT:  func() coord { return coord{x, y - 1} },
+		RIGHT: func() coord { return coord{x, y + 1} },
 	}
 
-	c1, c2 := moves[b.currentMove]()
-	if c1 < 0 {
-		c1 = c1 + width
+	c := moves[b.currentMove]()
+	if c.x < 0 {
+		c.x = c.x + width
 	}
-	if c2 < 0 {
-		c2 = c2 + height
+	if c.y < 0 {
+		c.y = c.y + height
 	}
-	c1 = c1 % b.width
-	c2 = c2 % b.height
+	c.x = c.x % b.width
+	c.y = c.y % b.height
 
-	return b.update(c1, c2)
+	return b.update(c)
 }
 
-func (b *board) update(x, y int) bool {
-	for _, c := range b.snake {
-		if c.x == x && c.y == y {
+func (b *board) update(c coord) bool {
+	for _, s := range b.snake {
+		if s == c {
+			// snake hit itself, game over
 			return false
 		}
 	}
 
-	c := coord{x, y}
 	oldSnake := b.snake
 	newSnake := []coord{c}
 	for i := 0; i < len(oldSnake)-1; i++ {
