@@ -19,64 +19,56 @@ const (
 	RIGHT
 )
 
-type el int
-
-const (
-	NONE el = iota
-	SNAKE
-	APPLE
-	WALL
-)
-
 type coord struct {
 	x, y int
 }
 
 type board struct {
-	b             [][]el
 	height, width int
+	apple         coord
 	snake         []coord
-	curDirection  move
+	wall          []coord // TODO use
+	currentMove   move
 	r             *rand.Rand
 }
 
 func newBoard(height, width int) *board {
-	b := make([][]el, height)
-	for i := range b {
-		b[i] = make([]el, width)
-	}
 	board := &board{
-		b:            b,
-		height:       height,
-		width:        width,
-		curDirection: NO,
-		r:            rand.New(rand.NewSource(time.Now().UnixNano())),
+		height:      height,
+		width:       width,
+		snake:       []coord{{1, 1}}, // TODO start in the middle
+		currentMove: NO,
+		r:           rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
-	board.snake = []coord{{1, 1}}
 	board.addApple()
-
 	return board
 }
 
 func (b *board) addApple() {
-	b.refresh()
-
 	// random
 	for i := 0; i < 10; i++ {
-		x, y := b.r.Intn(b.height), b.r.Intn(b.width)
-		if b.b[x][y] == NONE {
-			b.b[x][y] = APPLE
-			return
+		c := coord{
+			b.r.Intn(b.height),
+			b.r.Intn(b.width),
+		}
+		for _, s := range b.snake {
+			if s != c {
+				b.apple = c
+				return
+			}
 		}
 	}
 
 	// non-random
 	for i := 0; i < b.height; i++ {
 		for j := 0; j < b.width; j++ {
-			if b.b[i][j] == NONE {
-				b.b[i][j] = APPLE
-				return
+			c := coord{i, j}
+			for _, s := range b.snake {
+				if s != c {
+					b.apple = c
+					return
+				}
 			}
 		}
 	}
@@ -84,66 +76,64 @@ func (b *board) addApple() {
 
 func (b *board) draw(w io.Writer) {
 	clear(w)
-	b.refresh()
-
 	snakeHead := b.snake[0]
 
-	for i := range b.b {
-		s := ""
-		for j := range b.b[i] {
-			switch b.b[i][j] {
-			case SNAKE:
-				if i == snakeHead.x && j == snakeHead.y {
-					s += "$"
-				} else {
-					s += "S"
-				}
-			case APPLE:
-				s += "A"
-			default:
-				s += "."
-			}
-		}
-		fmt.Fprintf(w, s)
-		fmt.Fprintf(w, "\n")
+	bb := make([][]string, b.height)
+	for i := range bb {
+		bb[i] = make([]string, b.width)
 	}
-}
+	for i := range bb {
+		for j := range bb[i] {
+			bb[i][j] = "."
+		}
+	}
 
-func (b *board) refresh() {
-	for _, c := range b.snake {
-		b.b[c.x][c.y] = SNAKE
+	bb[snakeHead.x][snakeHead.y] = "$"
+	for i := 1; i < len(b.snake); i++ {
+		e := b.snake[i]
+		bb[e.x][e.y] = "S"
+	}
+	bb[b.apple.x][b.apple.y] = "A"
+
+	for i := range bb {
+		for j := range bb[i] {
+			fmt.Fprintf(w, bb[i][j])
+		}
+		fmt.Fprintf(w, "\n")
 	}
 }
 
 func (b *board) changeDirection(s string) {
 	switch s {
 	case "w":
-		if b.curDirection != DOWN {
-			b.curDirection = UP
+		if b.currentMove != DOWN {
+			b.currentMove = UP
 		}
 	case "s":
-		if b.curDirection != UP {
-			b.curDirection = DOWN
+		if b.currentMove != UP {
+			b.currentMove = DOWN
 		}
 	case "a":
-		if b.curDirection != RIGHT {
-			b.curDirection = LEFT
+		if b.currentMove != RIGHT {
+			b.currentMove = LEFT
 		}
 	case "d":
-		if b.curDirection != LEFT {
-			b.curDirection = RIGHT
+		if b.currentMove != LEFT {
+			b.currentMove = RIGHT
 		}
 	default:
 	}
 }
 
+// playMove performs the next move of the snake.
+// It returns false in case of game over.
 func (b *board) playMove() bool {
-	if b.curDirection == NO {
+	if b.currentMove == NO {
 		return true
 	}
-	b.refresh()
 
 	x, y := b.snake[0].x, b.snake[0].y
+	// TODO use coord?
 	moves := map[move]func() (int, int){
 		UP:    func() (int, int) { return x - 1, y },
 		DOWN:  func() (int, int) { return x + 1, y },
@@ -151,7 +141,7 @@ func (b *board) playMove() bool {
 		RIGHT: func() (int, int) { return x, y + 1 },
 	}
 
-	c1, c2 := moves[b.curDirection]()
+	c1, c2 := moves[b.currentMove]()
 	if c1 < 0 {
 		c1 = c1 + width
 	}
@@ -171,28 +161,18 @@ func (b *board) update(x, y int) bool {
 		}
 	}
 
-	newSnake := []coord{{x, y}}
-
-	if b.b[x][y] == NONE {
-		for i := 0; i < len(b.snake)-1; i++ {
-			newSnake = append(newSnake, b.snake[i])
-		}
+	c := coord{x, y}
+	oldSnake := b.snake
+	newSnake := []coord{c}
+	for i := 0; i < len(oldSnake)-1; i++ {
+		newSnake = append(newSnake, oldSnake[i])
 	}
-
-	if b.b[x][y] == APPLE {
-		for i := 0; i < len(b.snake); i++ {
-			newSnake = append(newSnake, b.snake[i])
-		}
-		b.addApple()
-	}
-
-	for _, c := range b.snake {
-		b.b[c.x][c.y] = NONE
-	}
-
 	b.snake = newSnake
-	for _, c := range b.snake {
-		b.b[c.x][c.y] = SNAKE
+
+	if b.apple == c {
+		newSnake = append(newSnake, oldSnake[len(oldSnake)-1])
+		b.snake = newSnake
+		b.addApple()
 	}
 
 	return true
