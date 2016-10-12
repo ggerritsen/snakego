@@ -36,7 +36,7 @@ func newBoard(height, width int) *board {
 	board := &board{
 		height:      height,
 		width:       width,
-		snake:       []coord{{1, 1}}, // TODO start in the middle
+		snake:       []coord{{height / 2, width / 2}}, // TODO start in the middle
 		currentMove: NO,
 		r:           rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
