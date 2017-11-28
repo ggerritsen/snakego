@@ -46,7 +46,6 @@ func newBoard(height, width int) *board {
 }
 
 func (b *board) addApple() {
-	// random
 	for i := 0; i < 10; i++ {
 		c := coord{
 			b.r.Intn(b.height),
@@ -60,7 +59,7 @@ func (b *board) addApple() {
 		}
 	}
 
-	// non-random
+	// fallback option: place the apple non-random
 	for i := 0; i < b.height; i++ {
 		for j := 0; j < b.width; j++ {
 			c := coord{i, j}
@@ -74,9 +73,8 @@ func (b *board) addApple() {
 	}
 }
 
-func (b *board) draw(w io.Writer) {
+func (b *board) Draw(w io.Writer) {
 	clear(w)
-	snakeHead := b.snake[0]
 
 	bb := make([][]string, b.height)
 	for i := range bb {
@@ -88,6 +86,7 @@ func (b *board) draw(w io.Writer) {
 		}
 	}
 
+	snakeHead := b.snake[0]
 	bb[snakeHead.x][snakeHead.y] = "$"
 	for i := 1; i < len(b.snake); i++ {
 		e := b.snake[i]
@@ -103,7 +102,7 @@ func (b *board) draw(w io.Writer) {
 	}
 }
 
-func (b *board) changeDirection(s string) {
+func (b *board) ChangeDirection(s string) {
 	switch s {
 	case "w":
 		if b.currentMove != DOWN {
@@ -125,11 +124,12 @@ func (b *board) changeDirection(s string) {
 	}
 }
 
-// playMove performs the next move of the snake.
-// It returns false in case of game over.
-func (b *board) playMove() bool {
+// PlayMove performs the next move of the snake.
+// It returns error in case of game over.
+// It returns true if the snake ate the apple, false otherwise.
+func (b *board) PlayMove() (bool, error) {
 	if b.currentMove == NO {
-		return true
+		return false, nil
 	}
 
 	x, y := b.snake[0].x, b.snake[0].y
@@ -153,11 +153,11 @@ func (b *board) playMove() bool {
 	return b.update(c)
 }
 
-func (b *board) update(c coord) bool {
+func (b *board) update(c coord) (a bool, err error) {
 	for _, s := range b.snake {
 		if s == c {
 			// snake hit itself, game over
-			return false
+			return false, fmt.Errorf("snake hit itself")
 		}
 	}
 
@@ -166,15 +166,15 @@ func (b *board) update(c coord) bool {
 	for i := 0; i < len(oldSnake)-1; i++ {
 		newSnake = append(newSnake, oldSnake[i])
 	}
-	b.snake = newSnake
 
 	if b.apple == c {
 		newSnake = append(newSnake, oldSnake[len(oldSnake)-1])
-		b.snake = newSnake
 		b.addApple()
+		a = true
 	}
 
-	return true
+	b.snake = newSnake
+	return a, nil
 }
 
 func clear(w io.Writer) {

@@ -11,8 +11,9 @@ import (
 	"time"
 )
 
-const frameRate = 1000 * time.Millisecond
-const height, width = 3, 3
+const height, width = 11, 11
+
+var frameRateMs = 500
 
 func main() {
 	// setup stty to forward keys directly
@@ -23,6 +24,7 @@ func main() {
 		log.Fatalf("Could not backup terminal settings: %s", err)
 	}
 
+	// restoryStty to be called when game ends
 	restoreStty := func() {
 		cmd := exec.Command("/bin/stty", "-g", string(b))
 		cmd.Stdin = os.Stdin
@@ -38,6 +40,7 @@ func main() {
 		log.Fatalf("Could not setup terminal: %s", err)
 	}
 
+	// trap exit signal
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, os.Kill, syscall.SIGTERM)
 
@@ -51,7 +54,7 @@ func main() {
 		for {
 			// TODO: make it possible to use arrow keys
 			if sc.Scan() {
-				board.changeDirection(sc.Text())
+				board.ChangeDirection(sc.Text())
 			} else {
 				fmt.Printf("error: %s", sc.Err())
 				break
@@ -70,14 +73,18 @@ func main() {
 		}()
 
 		for {
-			board.draw(os.Stdout)
-			time.Sleep(frameRate)
-			if ok := board.playMove(); !ok {
+			board.Draw(os.Stdout)
+			time.Sleep(time.Duration(frameRateMs) * time.Millisecond)
+			ateApple, err := board.PlayMove()
+			if err != nil {
 				// game over
-				fmt.Printf("Game over.\n")
-				time.Sleep(frameRate)
+				fmt.Printf("Game over: %s.\n", err)
+				time.Sleep(time.Duration(frameRateMs) * time.Millisecond)
 				stop <- os.Interrupt
 				break
+			}
+			if ateApple {
+				frameRateMs = frameRateMs / len(board.snake)
 			}
 		}
 	}()
