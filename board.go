@@ -36,7 +36,7 @@ func newBoard(height, width int) *board {
 	board := &board{
 		height:      height,
 		width:       width,
-		snake:       []coord{{height / 2, width / 2}}, // TODO start in the middle
+		snake:       []coord{{height / 2, width / 2}},
 		currentMove: NO,
 		r:           rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
@@ -94,7 +94,18 @@ func (b *board) Draw(w io.Writer) {
 	}
 	bb[b.apple.x][b.apple.y] = "A"
 
+	// print vertical buffer
+	for i := 0; i < 17; i++ {
+		fmt.Fprintf(w, "\n")
+	}
+	var horbuf string
+	for i := 0; i < 90; i++ {
+		horbuf = horbuf + " "
+	}
+
+	// print board
 	for i := range bb {
+		fmt.Fprintf(w, horbuf)
 		for j := range bb[i] {
 			fmt.Fprintf(w, bb[i][j])
 		}

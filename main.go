@@ -41,6 +41,14 @@ func main() {
 		log.Fatalf("Could not setup terminal: %s", err)
 	}
 
+	// TODO: hide cursor (doesn't work yet)
+	cmd = exec.Command("/usr/bin/tput", "civis")
+	cmd.Stdin = os.Stdin
+	if err := cmd.Run(); err != nil {
+		log.Printf("Warn: could not hide cursor. %s", err)
+		time.Sleep(1 * time.Second)
+	}
+
 	// trap exit signal
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, os.Kill, syscall.SIGTERM)
@@ -85,7 +93,7 @@ func main() {
 				break
 			}
 			if ateApple {
-				x := math.Pow(0.99, float64(len(board.snake))) 
+				x := math.Pow(0.99, float64(len(board.snake)))
 				frameRateMs = int(float64(frameRateMs) * x)
 				fmt.Printf("framerate %dms", frameRateMs)
 				time.Sleep(1 * time.Second)
