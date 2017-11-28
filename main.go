@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -84,7 +85,10 @@ func main() {
 				break
 			}
 			if ateApple {
-				frameRateMs = frameRateMs / len(board.snake)
+				x := math.Pow(0.99, float64(len(board.snake))) 
+				frameRateMs = int(float64(frameRateMs) * x)
+				fmt.Printf("framerate %dms", frameRateMs)
+				time.Sleep(1 * time.Second)
 			}
 		}
 	}()
